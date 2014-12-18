@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -ex
+
+make clean all
+
+main | tee x.dot
+dot -Tsvg x.dot >x.svg
+inkscape x.svg

@@ -1,0 +1,41 @@
+package core
+
+import (
+	"fmt"
+	"image"
+)
+
+type SpriteId int
+
+type Sprite struct {
+	Id             SpriteId
+	Location       image.Rectangle
+	picture        image.Image
+}
+
+func NewSprite(location image.Rectangle, picture image.Image) Sprite {
+	return Sprite{<-nextSpriteId, location, picture}
+}
+
+func (sprite Sprite) height() int {
+	return sprite.Location.Dy()
+}
+
+func (sprite Sprite) width() int {
+	return sprite.Location.Dx()
+}
+
+func (self *Sprite) String() string {
+	return fmt.Sprintf("ID: %v, Bounds: (%v X %v)", self.Id, self.Location.Dx(), self.Location.Dy())
+}
+
+
+var nextSpriteId = make(chan SpriteId)
+
+func init() {
+	go func() {
+		for i := 1; ; i++ {
+			nextSpriteId <- SpriteId(i)
+		}
+	}()
+}

@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+
+mkdir -p data
+
+#bin/createSprites /tmp sprites  data/background/white.jpg  sprites/*.jpg #data/sprites/*.jpeg data/sprites/*.JPG
+#bin/createSprites /tmp sprites     data/background/white.jpg data/sprites/stamp*.jpg 
+
+bin/createSprites /tmp sprites     data/background/white.jpg data/small/*
+
+#time bin/createPile -cpuprofile=create_pile.prof /tmp/pile 100000 1200 800
+#time bin/createPile -memprofile=create_pile.mprof /tmp/pile 100000 1200 800
+bin/createPile /tmp/pile 15000 10000 5000
+
+cp src/game/web/page.html /tmp
+cp src/game/web/page.js /tmp
+
+
+bin/web -memprofile=web.mprof 192.168.1.6:8080 /tmp/pile
+
+

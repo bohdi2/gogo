@@ -1,0 +1,114 @@
+package core
+
+import (
+	"fmt"
+	"image"
+	"image/draw"
+	"image/jpeg"
+	"json"
+	"log"
+	"os"
+)
+
+type SheetPacker interface {
+	Add(filename string)
+	Pack(dirname, filename string)
+}
+
+func shrink(n int, r image.Rectangle) image.Rectangle {
+	p := image.Pt(n,n)
+	return image.Rectangle{r.Min.Add(p), r.Max.Sub(p)}
+}
+
+func enlarge(n int, r image.Rectangle) image.Rectangle {
+	p := image.Pt(n,n)
+	return image.Rectangle{r.Min.Sub(p), r.Max.Add(p)}
+}
+
+
+
+
+func readImageConfig(filename string) (image.Config, string, os.Error) {
+	source, err := os.Open(filename)
+	if err != nil {
+		return image.Config{}, "", err
+	}
+	defer source.Close()
+
+	return image.DecodeConfig(source)
+}
+
+func readImage(filename string) (image.Image, os.Error) {
+	source, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer source.Close()
+
+	return jpeg.Decode(source)
+}
+
+// Get the width x height data for the sprite
+
+func readPair(filename string, id SpriteId, offset image.Point) (Sprite, os.Error) {
+	spriteImage, err := readImage(filename)
+	if err != nil {
+		return NewSprite(image.Rect(0,0,0,0), nil), nil
+	}
+
+	bounds := enlarge(5, spriteImage.Bounds())
+	sheetLocation := image.Rect(offset.X, offset.Y, offset.X+bounds.Dx(), offset.Y+bounds.Dy())
+
+	return NewSprite(sheetLocation, spriteImage), nil
+}
+
+func writeSheet(filename string, sprites []Sprite) os.Error {
+	dest, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer dest.Close()
+
+	encoder := json.NewEncoder(dest)
+	return encoder.Encode(sprites)
+}
+
+func writeSheetImage(filename string, width, height int, sprites []Sprite) os.Error {
+	// Create the sprite strip image.
+
+	fmt.Printf("Creating new image (%v x %v) %v\n", width, height, width*height)
+	sheet := image.NewRGBA(width, height)
+
+	// Once more iterate over the sprites, but this time
+	// copy them into the sprite sheet.
+
+	for _, sprite := range sprites {
+		draw.Draw(sheet, sprite.Location, image.Black, image.Point{0, 0}, draw.Over)
+		draw.Draw(sheet, shrink(5, sprite.Location), sprite.picture, image.Point{5, 5}, draw.Over)
+	}
+
+	// Save the sprite sheet.
+	dest, err := os.Create(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dest.Close()
+
+	return jpeg.Encode(dest, sheet, nil)
+}
+
+
+func readSpriteSheet(filename string) *[]Sprite {
+	src, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer src.Close()
+
+	sprites := make([]Sprite, 0)
+
+	decoder := json.NewDecoder(src)
+	decoder.Decode(&sprites)
+
+	return &sprites
+}

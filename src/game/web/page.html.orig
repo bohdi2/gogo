@@ -1,0 +1,74 @@
+<html>
+  <head>
+    <script type="text/javascript">
+      function init() {
+        var f = document.getElementById('foo');
+        var c = document.getElementById('canvas');
+        var ctx = c.getContext('2d');
+        var ws = new WebSocket("ws://127.0.0.1:8080/ws");
+
+        ws.onopen = function(unused) {
+            writeToScreen('Opened');
+            c.onclick = function(e) {
+
+            var x;
+            var y;
+
+            if (e.pageX != undefined && e.pageY != undefined) {
+                x = e.pageX + f.scrollLeft
+                y = e.pageY + f.scrollTop
+            }
+            else {
+                x = e.clientX + f.scrollLeft;
+                y = e.clientY + f.scrollTop;
+            }
+
+            x -= c.offsetLeft;
+            y -= c.offsetTop;
+
+            ws.send(JSON.stringify({Type: 'CLICK', X: x, Y: y}));
+        }
+
+        ws.onclose = function(event) {
+            writeToScreen('Closed: ' + event.data);
+        }
+
+        ws.onmessage = function(event) {
+            var d = JSON.parse(event.data);
+
+            var width = d.Width
+            var height = d.Height
+            var spriteX = d.SpritePoint.X
+            var spriteY = d.SpritePoint.Y
+
+            var x = d.GroundPoint.X
+            var y = d.GroundPoint.Y
+
+            ctx.drawImage(sprites, spriteX, spriteY, width, height, x, y, width, height)
+            //ctx.strokeRect(x, y, width, height)
+        }
+
+        ws.onerror = function(event) {
+            writeToScreen('<span style="color: red;">ERROR:</span> ' + event.data);
+        };
+      }
+
+      function writeToScreen(message) { 
+        var pre = document.createElement("p"); 
+        pre.style.wordWrap = "break-word";
+        pre.innerHTML = message; 
+        //output.appendChild(pre); 
+      }
+    </script>
+  </head>
+  <body onload="init()">
+    <div id="foo" style="height:600px;width:1200px;overflow:scroll;border:1px solid">
+      <canvas width="{{{Width}}}" height="{{{Height}}}" id="canvas" style="border: 1px solid black">
+      </canvas>
+    </div>
+
+   <div id="output"></div>
+    <img id="sprites" src="files/sprites.jpg" alt="stamp1" width="177" height="113">
+  </body>
+</html>
+

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+export GOPATH=/home/chris/gogo
+
+#goinstall -nuke game/createSprites game/createPile game/web game/dot
+goinstall -clean game/createSprites game/createPile game/web game/dot
+
+
